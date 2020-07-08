@@ -18,7 +18,7 @@
                 height: 15,
                 position: 'absolute',
                 borderRadius: 50,
-                background: '#C6A62F'
+                background: '#C6A62F',
             },
             balls: [
                 {
@@ -66,20 +66,31 @@
                 top: 0,
                 right: '25%'
             },
-            infoBar: {
+            infoTopBar: {
                 width: 900,
                 height: 50,
                 position: 'absolute',
                 background: '#C6A62F',
                 color: '#62247B',
-                bottom: -60,
-                left: 0,
                 textAlign: 'center',
                 lineHeight: '50px',
+                top: -60,
+                left: 0,
+            },
+            infoBottomBar: {
+                width: 900,
+                height: 50,
+                position: 'absolute',
+                background: '#C6A62F',
+                color: '#62247B',
+                textAlign: 'center',
+                lineHeight: '50px',
+                bottom: -60,
+                left: 0,
             }
         };
         CONSTS = {
-            gameSpeed: 10,
+            gameSpeed: 20,
             score1: 0,
             score2: 0,
             stick1Speed: 0,
@@ -92,22 +103,25 @@
             ],
             cpu1Active: false,
             cpu2Active: false,
+            trailEffect: true,
         };
     }
 
     function start() {
         document.body.innerHTML = '';
         initVariables();
-        // var saveGame = readLocalStorage();
+        var saveGame = readLocalStorage();
+        if (!saveGame)
+            roll();
+        if (CONSTS.trailEffect)
+            trailEffect();
         setEvents();
         draw();
-        // if (!saveGame)
-        roll();
         loop();
     }
 
     function readLocalStorage() {
-        var saveGame = localStorage.getItem("saveGame");
+        var saveGame = localStorage.getItem("saveGame-ibrahim");
         if (saveGame) {
             saveGame = JSON.parse(saveGame);
             CONSTS = saveGame.CONSTS;
@@ -123,11 +137,12 @@
     function draw() {
         $('<div/>', {id: 'pong-game'}).css(CSS.arena).appendTo('body');
         $('<div/>', {id: 'pong-line'}).css(CSS.line).appendTo('#pong-game');
-        $('<div/>', {id: 'stick-1'}).css($.extend(CSS.stick1, CSS.stick)).text('PLAYER 1').appendTo('#pong-game');
-        $('<div/>', {id: 'stick-2'}).css($.extend(CSS.stick2, CSS.stick)).text('PLAYER 2').appendTo('#pong-game');
+        $('<div/>', {id: 'stick-1'}).css($.extend(CSS.stick1, CSS.stick)).text(CONSTS.cpu1Active ? 'CPU 1' : 'PLAYER 1').appendTo('#pong-game');
+        $('<div/>', {id: 'stick-2'}).css($.extend(CSS.stick2, CSS.stick)).text(CONSTS.cpu2Active ? 'CPU 2' : 'PLAYER 2').appendTo('#pong-game');
         $('<div/>', {id: 'score-1'}).css($.extend(CSS.score1, CSS.score)).appendTo('#pong-game');
         $('<div/>', {id: 'score-2'}).css($.extend(CSS.score2, CSS.score)).appendTo('#pong-game');
-        $('<div/>', {id: 'info-bar'}).css(CSS.infoBar).text("PLAYER 1: W S 🕹 PLAYER 2: UP DOWN️ 🕹 CPU 1: C CPU 2: V 🕹 NEW BALL: SPACE 🕹 REMOVE BALL: X").appendTo('#pong-game');
+        $('<div/>', {id: 'info-bottom-bar'}).css(CSS.infoBottomBar).text("NEW BALL: SPACE 🕹 REMOVE BALL: X 🕹 TRAIL EFFECT: T").appendTo('#pong-game');
+        $('<div/>', {id: 'info-top-bar'}).css(CSS.infoTopBar).text("PLAYER 1: W S 🕹 PLAYER 2: UP DOWN️ 🕹 CPU 1: C 🕹 CPU 2: V").appendTo('#pong-game');
 
         CONSTS.balls.forEach(function (ball, i) {
             $('<div/>', {id: `pong-ball-${i}`}).css($.extend(CSS.ball, CSS.balls[i])).appendTo('#pong-game');
@@ -162,6 +177,10 @@
             if (e.keyCode == 88) {
                 removeBall();
             }
+            if (e.keyCode == 84) {
+                CONSTS.trailEffect = !CONSTS.trailEffect;
+                trailEffect();
+            }
         });
     }
 
@@ -189,11 +208,10 @@
                         var ball = nearestBallToPlayer(1);
                         if (ball.top > CSS.stick1.top + CSS.stick.height / 2) {
                             CONSTS.stick1Speed = 5;
-                            // CSS.stick1.top = ball.top;
                         } else {
                             CONSTS.stick1Speed = -5;
                         }
-                    }, 20);
+                    }, 100);
                 }
                 break;
             case 2:
@@ -209,7 +227,7 @@
                         } else {
                             CONSTS.stick2Speed = -5;
                         }
-                    }, 20);
+                    }, 100);
                 }
                 break;
 
@@ -219,7 +237,7 @@
 
     function writeLocalStore() {
         var saveGame = {CONSTS: CONSTS, CSS: CSS};
-        localStorage.setItem("saveGame", JSON.stringify(saveGame));
+        localStorage.setItem("saveGame-ibrahim", JSON.stringify(saveGame));
     }
 
     function loop() {
@@ -298,7 +316,6 @@
 
 
     function playerLost(PLAYER) {
-        console.log(CONSTS, CSS);
         switch (PLAYER) {
             case 1:
                 CONSTS.score2++;
@@ -322,9 +339,7 @@
             if (Math.random() < 0.5) {
                 side = 1;
             }
-            // ball.ballTopSpeed = 1 + i;
             ball.ballTopSpeed = Math.random() * -2 - 3;
-            // ball.ballLeftSpeed = 1 + i;
             ball.ballLeftSpeed = side * (Math.random() * 2 + 3);
         });
 
@@ -348,8 +363,44 @@
             $(`#pong-ball-${CONSTS.balls.length - 1}`).remove();
             CONSTS.balls.pop();
             CSS.balls.pop();
-
         }
+    }
+
+    function trailEffect() {
+        clearInterval(window.trail);
+
+        var TRAILCOUNT = 20;
+        var TRAILINTERVAL = 50;
+        if (CONSTS.trailEffect)
+            window.trail = setInterval(function () {
+
+                CSS.balls.forEach(function (ball, index) {
+                    for (var i = 1; i <= TRAILCOUNT; i++) {
+                        setTimeout((function (e) {
+                            return function () {
+
+                                $('<div/>', {id: `pong-ball-${index}-trail-${e}`}).css({
+                                    top: ball.top,
+                                    left: ball.left,
+                                    opacity: 1 / e,
+                                    width: 15,
+                                    height: 15,
+                                    position: 'absolute',
+                                    borderRadius: 50,
+                                    background: '#C6A62F',
+                                }).appendTo('#pong-game');
+
+                            }
+                        })(i), TRAILINTERVAL * i);
+
+                        setTimeout((function (e) {
+                            return function () {
+                                $(`#pong-ball-${index}-trail-${e}`).remove()
+                            }
+                        })(i), TRAILINTERVAL * i * 1.5)
+                    }
+                });
+            }, TRAILINTERVAL * 5);
     }
 
     start();
