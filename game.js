@@ -1,77 +1,95 @@
 (function () {
-    var CSS = {
-        arena: {
-            width: 900,
-            height: 600,
-            background: '#62247B',
-            position: 'fixed',
-            top: '50%',
-            left: '50%',
-            zIndex: '999',
-            transform: 'translate(-50%, -50%)'
-        },
-        ball: {
-            width: 15,
-            height: 15,
-            position: 'absolute',
-            top: 0,
-            left: 350,
-            borderRadius: 50,
-            background: '#C6A62F'
-        },
-        line: {
-            width: 0,
-            height: 600,
-            borderLeft: '2px dashed #C6A62F',
-            position: 'absolute',
-            top: 0,
-            left: '50%'
-        },
-        stick: {
-            width: 12,
-            height: 85,
-            position: 'absolute',
-            background: '#C6A62F'
-        },
-        stick1: {
-            left: 0,
-            top: 150
-        },
-        stick2: {
-            right: 0,
-            top: 150
-        },
-        score: {
-            position: 'absolute',
-            color: '#C6A62F',
-            fontSize: 64,
-            fontFamily: 'monospace',
-        },
-        score1: {
-            top: 0,
-            left: '25%'
-        },
-        score2: {
-            top: 0,
-            right: '25%'
-        },
-    };
+    var CSS, CONSTS;
 
-    var CONSTS = {
-        gameSpeed: 20,
-        score1: 0,
-        score2: 0,
-        stick1Speed: 0,
-        stick2Speed: 0,
-        ballTopSpeed: 0,
-        ballLeftSpeed: 0
-    };
+    function initVariables() {
+        CSS = {
+            arena: {
+                width: 900,
+                height: 600,
+                background: '#62247B',
+                position: 'fixed',
+                top: '50%',
+                left: '50%',
+                zIndex: '999',
+                transform: 'translate(-50%, -50%)'
+            },
+            ball: {
+                width: 15,
+                height: 15,
+                position: 'absolute',
+                top: 0,
+                left: 350,
+                borderRadius: 50,
+                background: '#C6A62F'
+            },
+            line: {
+                width: 0,
+                height: 600,
+                borderLeft: '2px dashed #C6A62F',
+                position: 'absolute',
+                top: 0,
+                left: '50%'
+            },
+            stick: {
+                width: 12,
+                height: 85,
+                position: 'absolute',
+                background: '#C6A62F'
+            },
+            stick1: {
+                left: 0,
+                top: 150
+            },
+            stick2: {
+                right: 0,
+                top: 150
+            },
+            score: {
+                position: 'absolute',
+                color: '#C6A62F',
+                fontSize: 64,
+                fontFamily: 'monospace',
+            },
+            score1: {
+                top: 0,
+                left: '25%'
+            },
+            score2: {
+                top: 0,
+                right: '25%'
+            },
+        };
+        CONSTS = {
+            gameSpeed: 20,
+            score1: 0,
+            score2: 0,
+            stick1Speed: 0,
+            stick2Speed: 0,
+            ballTopSpeed: 0,
+            ballLeftSpeed: 0
+        };
+    }
 
     function start() {
+        document.body.innerHTML = '';
+        initVariables();
         draw();
         setEvents();
         roll();
+        readLocalStorage();
         loop();
+    }
+
+    function readLocalStorage() {
+        var saveGame = localStorage.getItem("saveGame");
+        console.log(saveGame)
+        if (saveGame) {
+            saveGame = JSON.parse(saveGame);
+            console.log(saveGame)
+            CONSTS = saveGame.CONSTS;
+            CSS = saveGame.CSS;
+        }
+
     }
 
     function draw() {
@@ -104,12 +122,18 @@
         });
     }
 
+    function writeLocalStore() {
+        var saveGame = {CONSTS: CONSTS, CSS: CSS};
+        localStorage.setItem("saveGame", JSON.stringify(saveGame));
+    }
+
     function loop() {
         window.pongLoop = setInterval(function () {
             renderScore();
             renderStick();
             renderBall();
             gameController();
+            writeLocalStore();
         }, CONSTS.gameSpeed);
     }
 
@@ -133,19 +157,15 @@
     }
 
     function gameOver() {
-        alert(CONSTS.score1 === 5 ? 'Player1 Wins' : 'Player2 Wins');
+        if (CONSTS.score1 === 5)
+            alert('Player1 Wins');
+        if (CONSTS.score2 === 5)
+            alert('Player2 Wins');
 
-        //RESETTING CONSTANTS
-        CONSTS = {
-            gameSpeed: 20,
-            score1: 0,
-            score2: 0,
-            stick1Speed: 0,
-            stick2Speed: 0,
-            ballTopSpeed: 0,
-            ballLeftSpeed: 0,
-        };
-        roll();
+        localStorage.clear();
+        document.body.innerHTML = '';
+        clearInterval(window.pongLoop)
+        start();
     }
 
     function renderScore() {
