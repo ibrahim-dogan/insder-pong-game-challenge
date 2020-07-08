@@ -17,11 +17,15 @@
                 width: 15,
                 height: 15,
                 position: 'absolute',
-                top: 0,
-                left: 350,
                 borderRadius: 50,
                 background: '#C6A62F'
             },
+            balls: [
+                {
+                    top: 0,
+                    left: 350,
+                },
+            ],
             line: {
                 width: 0,
                 height: 600,
@@ -80,8 +84,12 @@
             score2: 0,
             stick1Speed: 0,
             stick2Speed: 0,
-            ballTopSpeed: 0,
-            ballLeftSpeed: 0,
+            balls: [
+                {
+                    ballTopSpeed: 0,
+                    ballLeftSpeed: 0,
+                }
+            ],
             cpu1Active: false,
             cpu2Active: false,
         };
@@ -90,11 +98,11 @@
     function start() {
         document.body.innerHTML = '';
         initVariables();
-        draw();
+        // var saveGame = readLocalStorage();
         setEvents();
-        var saveGame = readLocalStorage();
-        if (!saveGame)
-            roll();
+        draw();
+        // if (!saveGame)
+        roll();
         loop();
     }
 
@@ -115,12 +123,15 @@
     function draw() {
         $('<div/>', {id: 'pong-game'}).css(CSS.arena).appendTo('body');
         $('<div/>', {id: 'pong-line'}).css(CSS.line).appendTo('#pong-game');
-        $('<div/>', {id: 'pong-ball'}).css(CSS.ball).appendTo('#pong-game');
         $('<div/>', {id: 'stick-1'}).css($.extend(CSS.stick1, CSS.stick)).text('PLAYER 1').appendTo('#pong-game');
         $('<div/>', {id: 'stick-2'}).css($.extend(CSS.stick2, CSS.stick)).text('PLAYER 2').appendTo('#pong-game');
         $('<div/>', {id: 'score-1'}).css($.extend(CSS.score1, CSS.score)).appendTo('#pong-game');
         $('<div/>', {id: 'score-2'}).css($.extend(CSS.score2, CSS.score)).appendTo('#pong-game');
-        $('<div/>', {id: 'info-bar'}).css(CSS.infoBar).text("PLAYER 1: W S 🕹 PLAYER 2: UP DOWN️ 🕹 CPU 1: C CPU 2: V").appendTo('#pong-game');
+        $('<div/>', {id: 'info-bar'}).css(CSS.infoBar).text("PLAYER 1: W S 🕹 PLAYER 2: UP DOWN️ 🕹 CPU 1: C CPU 2: V 🕹 NEW BALL: SPACE 🕹 REMOVE BALL: X").appendTo('#pong-game');
+
+        CONSTS.balls.forEach(function (ball, i) {
+            $('<div/>', {id: `pong-ball-${i}`}).css($.extend(CSS.ball, CSS.balls[i])).appendTo('#pong-game');
+        });
     }
 
     function setEvents() {
@@ -145,10 +156,28 @@
                 CONSTS.cpu2Active = !CONSTS.cpu2Active;
                 cpuMode(2);
             }
+            if (e.keyCode == 32) {
+                addBall();
+            }
+            if (e.keyCode == 88) {
+                removeBall();
+            }
         });
     }
 
     function cpuMode(PLAYER) {
+        function nearestBallToPlayer(PLAYER) {
+            var nearestBall = CSS.balls[0];
+            CSS.balls.forEach(function (ball, i) {
+                if (nearestBall.left > ball.left && PLAYER === 1) {
+                    nearestBall = ball;
+                } else if (nearestBall.left < ball.left && PLAYER === 2) {
+                    nearestBall = ball;
+                }
+            });
+            return nearestBall;
+        }
+
         switch (PLAYER) {
             case 1:
                 clearInterval(window.cpu2);
@@ -157,12 +186,14 @@
                 if (CONSTS.cpu1Active) {
                     $('#stick-1').text("CPU 1");
                     window.cpu2 = setInterval(function () {
-                        if (CSS.ball.top > CSS.stick1.top) {
+                        var ball = nearestBallToPlayer(1);
+                        if (ball.top > CSS.stick1.top + CSS.stick.height / 2) {
                             CONSTS.stick1Speed = 5;
+                            // CSS.stick1.top = ball.top;
                         } else {
                             CONSTS.stick1Speed = -5;
                         }
-                    }, 200);
+                    }, 20);
                 }
                 break;
             case 2:
@@ -172,12 +203,13 @@
                 if (CONSTS.cpu2Active) {
                     $('#stick-2').text("CPU 2");
                     window.cpu1 = setInterval(function () {
-                        if (CSS.ball.top > CSS.stick2.top) {
+                        var ball = nearestBallToPlayer(2);
+                        if (ball.top > CSS.stick2.top + CSS.stick.height / 2) {
                             CONSTS.stick2Speed = 5;
                         } else {
                             CONSTS.stick2Speed = -5;
                         }
-                    }, 200);
+                    }, 20);
                 }
                 break;
 
@@ -201,16 +233,19 @@
     }
 
     function gameController() {
-        //BALL ON THE LEFT
-        if (CSS.ball.left <= CSS.stick.width) {
-            CSS.ball.top > CSS.stick1.top && CSS.ball.top < CSS.stick1.top + CSS.stick.height && (CONSTS.ballLeftSpeed = CONSTS.ballLeftSpeed * -1)
-            || playerLost(1);
-        }
+        for (var i = 0; i < CONSTS.balls.length; i++) {
 
-        //BALL ON THE RIGHT
-        if (CSS.ball.left >= CSS.arena.width - CSS.ball.width - CSS.stick.width) {
-            CSS.ball.top > CSS.stick2.top && CSS.ball.top < CSS.stick2.top + CSS.stick.height && (CONSTS.ballLeftSpeed = CONSTS.ballLeftSpeed * -1)
-            || playerLost(2);
+            //BALL ON THE LEFT
+            if (CSS.balls[i].left <= CSS.stick.width) {
+                CSS.balls[i].top > CSS.stick1.top && CSS.balls[i].top < CSS.stick1.top + CSS.stick.height && (CONSTS.balls[i].ballLeftSpeed = CONSTS.balls[i].ballLeftSpeed * -1)
+                || playerLost(1);
+            }
+
+            //BALL ON THE RIGHT
+            if (CSS.balls[i].left >= CSS.arena.width - CSS.ball.width - CSS.stick.width) {
+                CSS.balls[i].top > CSS.stick2.top && CSS.balls[i].top < CSS.stick2.top + CSS.stick.height && (CONSTS.balls[i].ballLeftSpeed = CONSTS.balls[i].ballLeftSpeed * -1)
+                || playerLost(2);
+            }
         }
 
         if (CONSTS.score1 < 5 && CONSTS.score2 < 5) {
@@ -223,7 +258,7 @@
         if (CONSTS.score1 === 5)
             alert($('#stick-1').text() + ' Wins');
         if (CONSTS.score2 === 5)
-            alert($('#stick-1').text() + ' Wins');
+            alert($('#stick-2').text() + ' Wins');
 
         localStorage.clear();
         clearInterval(window.pongLoop);
@@ -248,19 +283,22 @@
     }
 
     function renderBall() {
-        CSS.ball.top += CONSTS.ballTopSpeed;
-        CSS.ball.left += CONSTS.ballLeftSpeed;
+        for (var i = 0; i < CONSTS.balls.length; i++) {
+            CSS.balls[i].top += CONSTS.balls[i].ballTopSpeed;
+            CSS.balls[i].left += CONSTS.balls[i].ballLeftSpeed;
 
-        if (CSS.ball.top <= 0 ||
-            CSS.ball.top >= CSS.arena.height - CSS.ball.height) {
-            CONSTS.ballTopSpeed = CONSTS.ballTopSpeed * -1;
+            if (CSS.balls[i].top <= 0 ||
+                CSS.balls[i].top >= CSS.arena.height - CSS.ball.height) {
+                CONSTS.balls[i].ballTopSpeed = CONSTS.balls[i].ballTopSpeed * -1;
+            }
+
+            $(`#pong-ball-${i}`).css({top: CSS.balls[i].top, left: CSS.balls[i].left});
         }
-
-        $('#pong-ball').css({top: CSS.ball.top, left: CSS.ball.left});
     }
 
 
     function playerLost(PLAYER) {
+        console.log(CONSTS, CSS);
         switch (PLAYER) {
             case 1:
                 CONSTS.score2++;
@@ -273,17 +311,45 @@
     }
 
     function roll() {
-        CSS.ball.top = 250;
-        CSS.ball.left = 350;
+        for (var i = 0; i < CONSTS.balls.length; i++) {
+            CSS.balls[i].top = 250;
+            CSS.balls[i].left = 350;
+        }
 
+        CONSTS.balls.forEach(function (ball, i) {
+            var side = -1;
+
+            if (Math.random() < 0.5) {
+                side = 1;
+            }
+            // ball.ballTopSpeed = 1 + i;
+            ball.ballTopSpeed = Math.random() * -2 - 3;
+            // ball.ballLeftSpeed = 1 + i;
+            ball.ballLeftSpeed = side * (Math.random() * 2 + 3);
+        });
+
+    }
+
+    function addBall() {
         var side = -1;
 
         if (Math.random() < 0.5) {
             side = 1;
         }
 
-        CONSTS.ballTopSpeed = Math.random() * -2 - 3;
-        CONSTS.ballLeftSpeed = side * (Math.random() * 2 + 3);
+        CONSTS.balls.push({ballTopSpeed: Math.random() * -2 - 3, ballLeftSpeed: side * (Math.random() * 2 + 3)});
+        CSS.balls.push({top: 250, left: 350});
+
+        $('<div/>', {id: `pong-ball-${CONSTS.balls.length - 1}`}).css($.extend(CSS.ball, CSS.balls[CONSTS.balls.length - 1])).appendTo('#pong-game');
+    }
+
+    function removeBall() {
+        if (CONSTS.balls.length > 1) {
+            $(`#pong-ball-${CONSTS.balls.length - 1}`).remove();
+            CONSTS.balls.pop();
+            CSS.balls.pop();
+
+        }
     }
 
     start();
