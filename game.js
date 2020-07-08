@@ -36,11 +36,15 @@
         stick1: {
             left: 0,
             top: 150
+        },
+        stick2: {
+            right: 0,
+            top: 150
         }
     };
 
     var CONSTS = {
-    	gameSpeed: 20,
+        gameSpeed: 20,
         score1: 0,
         score2: 0,
         stick1Speed: 0,
@@ -60,45 +64,55 @@
         $('<div/>', {id: 'pong-game'}).css(CSS.arena).appendTo('body');
         $('<div/>', {id: 'pong-line'}).css(CSS.line).appendTo('#pong-game');
         $('<div/>', {id: 'pong-ball'}).css(CSS.ball).appendTo('#pong-game');
-        $('<div/>', {id: 'stick-1'}).css($.extend(CSS.stick1, CSS.stick))
-        .appendTo('#pong-game');
+        $('<div/>', {id: 'stick-1'}).css($.extend(CSS.stick1, CSS.stick)).appendTo('#pong-game');
+        $('<div/>', {id: 'stick-2'}).css($.extend(CSS.stick2, CSS.stick)).appendTo('#pong-game');
     }
 
     function setEvents() {
         $(document).on('keydown', function (e) {
-            if (e.keyCode == 87) {
-                CONSTS.stick1Speed = -66;
+            if (e.keyCode == 83) {
+                CONSTS.stick1Speed = 5;
+            }
+            if (e.keyCode == 40) {
+                CONSTS.stick2Speed = 5;
             }
         });
 
         $(document).on('keyup', function (e) {
             if (e.keyCode == 87) {
-                CONSTS.stick1Speed = 0;
+                CONSTS.stick1Speed = -5;
+            }
+            if (e.keyCode == 38) {
+                CONSTS.stick2Speed = -5;
             }
         });
     }
 
     function loop() {
         window.pongLoop = setInterval(function () {
-            CSS.stick1.top += CONSTS.stick1Speed;
+            if (CSS.stick1.top + CONSTS.stick1Speed >= 0 && CSS.stick1.top + CONSTS.stick1Speed + (CSS.stick.height) <= 600)
+                CSS.stick1.top += CONSTS.stick1Speed;
+            if (CSS.stick2.top + CONSTS.stick2Speed >= 0 && CSS.stick2.top + CONSTS.stick2Speed + (CSS.stick.height) <= 600)
+                CSS.stick2.top += CONSTS.stick2Speed;
             $('#stick-1').css('top', CSS.stick1.top);
+            $('#stick-2').css('top', CSS.stick2.top);
 
             CSS.ball.top += CONSTS.ballTopSpeed;
-            CSS.ball.left = 110;
+            CSS.ball.left += CONSTS.ballLeftSpeed;
 
             if (CSS.ball.top <= 0 ||
                 CSS.ball.top >= CSS.arena.height - CSS.ball.height) {
                 CONSTS.ballTopSpeed = CONSTS.ballTopSpeed * -1;
             }
 
-            $('#pong-ball').css({top: CSS.ball.top,left: CSS.ball.left});
+            $('#pong-ball').css({top: CSS.ball.top, left: CSS.ball.left});
 
             if (CSS.ball.left <= CSS.stick.width) {
-            	CSS.ball.top > CSS.stick1.top && CSS.ball.top < CSS.stick1.top + CSS.stick.height && (CONSTS.ballLeftSpeed = CONSTS.ballLeftSpeed * -1) || roll();
+                CSS.ball.top > CSS.stick1.top && CSS.ball.top < CSS.stick1.top + CSS.stick.height && (CONSTS.ballLeftSpeed = CONSTS.ballLeftSpeed * -1) || roll();
             }
 
             if (CSS.ball.left >= CSS.arena.width - CSS.ball.width - CSS.stick.width) {
-                roll();
+                CSS.ball.top > CSS.stick2.top && CSS.ball.top < CSS.stick2.top + CSS.stick.height && (CONSTS.ballLeftSpeed = CONSTS.ballLeftSpeed * -1) || roll();
             }
         }, CONSTS.gameSpeed);
     }
